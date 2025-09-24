@@ -18,21 +18,23 @@ export default function StartAppointmentCard({
       end={{ x: 1, y: 1 }}
       style={cardStyles.container}
     >
-      <View>
-        <View style={cardStyles.titleContainer}>
+      <View style={cardStyles.headerRow}>
+        <View style={cardStyles.textContent}>
           <Text style={cardStyles.title}>새로운 약속 시작하기</Text>
-          <MaterialIcons name="add" color={"white"} size={30}></MaterialIcons>
+          <Text style={cardStyles.subtitle}>
+            친구와 시간을 정하고 간편하게 초대하세요.
+          </Text>
         </View>
-        <Text style={cardStyles.subtitle}>
-          친구와 시간을 정하고 간편하게 초대하세요.
-        </Text>
+        <View style={cardStyles.plusButton}>
+          <MaterialIcons name="add" color="#FFFFFF" size={20} />
+        </View>
       </View>
       <Pressable
         accessibilityRole="button"
         onPress={onCreatePress}
-        style={cardStyles.button}
+        style={cardStyles.ctaButton}
       >
-        <Text style={cardStyles.buttonLabel}>약속 만들기</Text>
+        <Text style={cardStyles.ctaLabel}>약속 만들기</Text>
       </Pressable>
     </LinearGradient>
   );

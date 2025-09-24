@@ -3,46 +3,61 @@ import { colors } from "../../styles/theme";
 
 export const cardStyles = StyleSheet.create({
   container: {
-    height: 140,
-    padding: 16,
-    borderRadius: 16,
+    padding: 20,
+    borderRadius: 18,
     justifyContent: "space-between",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  titleContainer: {
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+  },
+  textContent: {
+    flex: 1,
+    paddingRight: 16,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
-    color: "#F8FAFC",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#ECFEFF",
   },
-  button: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    opacity: 1,
+  plusButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.28)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaButton: {
+    marginTop: 16,
     alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
   },
-  buttonLabel: {
+  ctaLabel: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
   },
 });
 
 export const todayCardStyles = StyleSheet.create({
   container: {
-    height: 114,
+    minHeight: 114,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -50,6 +65,12 @@ export const todayCardStyles = StyleSheet.create({
     backgroundColor: colors.background,
     flexDirection: "row",
     alignItems: "stretch",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+    overflow: "hidden",
   },
   accent: {
     width: 8,
@@ -62,25 +83,26 @@ export const todayCardStyles = StyleSheet.create({
     marginLeft: 12,
     justifyContent: "space-between",
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   title: {
     fontSize: 16,
     fontWeight: "600",
     color: colors.primaryText,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   timeContainer: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 50,
+    backgroundColor: "#10B981",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
   },
   timeText: {
-    fontSize: 16,
-    color: colors.background,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   locationRow: {
     flexDirection: "row",
@@ -93,8 +115,97 @@ export const todayCardStyles = StyleSheet.create({
     color: colors.secondaryText,
   },
   message: {
-    marginTop: 12,
-    fontSize: 14,
+    fontSize: 13,
+    color: "#10B981",
+  },
+  highlight: {
+    fontWeight: "700",
+    color: "#10B981",
+  },
+  messageRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  participantsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  participantAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: -8,
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  participantLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.background,
+  },
+  extraChip: {
+    marginLeft: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "#F1F5F9",
+  },
+  extraChipText: {
+    fontSize: 12,
+    color: colors.primaryText,
+    fontWeight: "500",
+  },
+});
+
+export const upcomingCardStyles = StyleSheet.create({
+  container: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 16,
+    backgroundColor: colors.background,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+    overflow: "hidden",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.primaryText,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "#F1F5F9",
+  },
+  badgeText: {
+    fontSize: 12,
     color: colors.secondaryText,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  locationText: {
+    fontSize: 13,
+    color: colors.secondaryText,
+  },
+  accentText: {
+    color: "#10B981",
+    fontWeight: "600",
   },
 });

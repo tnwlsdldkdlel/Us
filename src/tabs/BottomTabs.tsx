@@ -12,14 +12,8 @@ import { tabStyles } from "./styles";
 import AppHeader from "../topbar/AppHeader";
 import HomeScreen from "../content/HomeScreen";
 import PlaceholderScreen from "../content/PlaceholderScreen";
-
-type TabParamList = {
-  Home: undefined;
-  Calendar: undefined;
-  Add: undefined;
-  Users: undefined;
-  Profile: undefined;
-};
+import CalendarScreen from "../calendar/CalendarScreen";
+import type { TabParamList } from "../navigation/types";
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -65,7 +59,7 @@ export default function BottomTabs(): ReactElement {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen
         name="Calendar"
-        children={renderPlaceholder("캘린더")}
+        component={CalendarScreen}
         options={{ headerShown: false }}
       />
       <Tab.Screen
