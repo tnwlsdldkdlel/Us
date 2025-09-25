@@ -2,15 +2,19 @@ import type { ReactElement } from "react";
 import { useMemo, useRef, useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
+  Animated,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { spacing } from "../styles/theme";
 import { appointmentDetailStyles } from "./styles";
 import {
   getAppointmentById,
@@ -249,8 +253,45 @@ function CommentRow({
 export default function AppointmentDetailScreen(): ReactElement {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<AppointmentDetailRoute>();
+  const insets = useSafeAreaInsets();
   const [commentText, setCommentText] = useState("");
   const inputRef = useRef<TextInput>(null);
+  const [isSheetVisible, setSheetVisible] = useState(false);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(40)).current;
+
+  const openSheet = (): void => {
+    overlayOpacity.setValue(0);
+    sheetTranslateY.setValue(40);
+    setSheetVisible(true);
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeSheet = (): void => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 40,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setSheetVisible(false));
+  };
 
   const appointment = useMemo(() => {
     return getAppointmentById(route.params.appointmentId);
@@ -293,7 +334,7 @@ export default function AppointmentDetailScreen(): ReactElement {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        keyboardVerticalOffset={8}
       >
         <ScrollView
           contentContainerStyle={appointmentDetailStyles.container}
@@ -309,7 +350,10 @@ export default function AppointmentDetailScreen(): ReactElement {
             <Text style={appointmentDetailStyles.headerTitle}>
               {headerLabel}
             </Text>
-            <TouchableOpacity style={appointmentDetailStyles.headerIconButton}>
+            <TouchableOpacity
+              style={appointmentDetailStyles.headerIconButton}
+              onPress={openSheet}
+            >
               <MaterialIcons name="more-vert" size={22} color="#111" />
             </TouchableOpacity>
           </View>
@@ -344,6 +388,75 @@ export default function AppointmentDetailScreen(): ReactElement {
             </TouchableOpacity>
           </View>
         </View>
+        <Modal
+          visible={isSheetVisible}
+          transparent
+          animationType="none"
+          onRequestClose={closeSheet}
+        >
+          <Animated.View
+            style={[
+              appointmentDetailStyles.sheetOverlay,
+              { opacity: overlayOpacity },
+            ]}
+          >
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={closeSheet}
+            />
+            <Animated.View
+              style={[
+                appointmentDetailStyles.sheetContainer,
+                {
+                  transform: [{ translateY: sheetTranslateY }],
+                  paddingBottom: spacing.vertical * 1.5 + insets.bottom,
+                },
+              ]}
+            >
+              <View style={appointmentDetailStyles.sheetHandle} />
+              <TouchableOpacity
+                style={[
+                  appointmentDetailStyles.sheetButton,
+                  { backgroundColor: "#E2E8F0" },
+                ]}
+                activeOpacity={0.85}
+                onPress={() => {
+                  closeSheet();
+                  navigation.navigate("AppointmentEdit", {
+                    appointmentId: appointment.id,
+                  });
+                }}
+              >
+                <Text
+                  style={[
+                    appointmentDetailStyles.sheetButtonLabel,
+                    { color: "#475569" },
+                  ]}
+                >
+                  약속 수정하기
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  appointmentDetailStyles.sheetButton,
+                  { backgroundColor: "#E11D48", marginBottom: 0 },
+                ]}
+                activeOpacity={0.85}
+                onPress={closeSheet}
+              >
+                <Text
+                  style={[
+                    appointmentDetailStyles.sheetButtonLabel,
+                    { color: "#FFFFFF" },
+                  ]}
+                >
+                  약속 파토내기
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </Animated.View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

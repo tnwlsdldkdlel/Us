@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import BottomTabs from './src/tabs/BottomTabs';
 import AppointmentDetailScreen from './src/appointments/AppointmentDetailScreen';
+import AppointmentEditScreen from './src/appointments/AppointmentEditScreen';
 import type { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -21,6 +22,10 @@ export default function App(): ReactElement {
             <Stack.Screen
               name="AppointmentDetail"
               component={AppointmentDetailScreen}
+            />
+            <Stack.Screen
+              name="AppointmentEdit"
+              component={AppointmentEditScreen}
             />
           </Stack.Navigator>
         </NavigationContainer>

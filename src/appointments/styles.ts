@@ -71,7 +71,7 @@ export const appointmentDetailStyles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   actionLabel: {
     fontSize: 16,
@@ -181,5 +181,38 @@ export const appointmentDetailStyles = StyleSheet.create({
     fontSize: 15,
     color: colors.primaryText,
     marginRight: 12,
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "flex-end",
+  },
+  sheetContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: spacing.horizontal,
+    paddingTop: 20,
+    paddingBottom: spacing.vertical * 1.5,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
+  sheetHandle: {
+    alignSelf: "center",
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#CBD5E1",
+    marginBottom: 20,
+  },
+  sheetButton: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sheetButtonLabel: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
