@@ -6,6 +6,9 @@ export const appointmentEditStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  keyboardAvoider: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: spacing.horizontal,
@@ -14,6 +17,23 @@ export const appointmentEditStyles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
+  },
+  floatingSubmitArea: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "flex-end",
+    backgroundColor: colors.background,
+  },
+  floatingSubmitSurface: {
+    backgroundColor: colors.background,
+    paddingTop: 8,
+    paddingHorizontal: spacing.horizontal,
+
+    borderRadius: 20,
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
   },
   header: {
     flexDirection: "row",
@@ -115,10 +135,6 @@ export const appointmentEditStyles = StyleSheet.create({
     color: "#6B7280",
     fontSize: 13,
     fontWeight: "500",
-  },
-  submitContainer: {
-    paddingHorizontal: spacing.horizontal,
-    paddingTop: spacing.vertical * 2,
   },
   submitButton: {
     borderRadius: 16,
