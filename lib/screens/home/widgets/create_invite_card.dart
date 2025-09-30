@@ -50,15 +50,6 @@ class CreateInviteCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(10),
-                child: const Icon(Icons.add, color: Colors.white),
-              ),
             ],
           ),
           const SizedBox(height: 18),
@@ -68,7 +59,7 @@ class CreateInviteCard extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.white.withOpacity(0.2),
                 foregroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFFE5E7EB)),
+                side: BorderSide(color: Colors.white.withOpacity(0.2)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
