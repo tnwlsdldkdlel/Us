@@ -18,6 +18,7 @@ class UsApp extends StatelessWidget {
         fontFamily: 'SpoqaHanSansNeo',
       ),
       home: const HomeScreen(),
+      supportedLocales: [Locale('ko', 'KR')],
     );
   }
 }

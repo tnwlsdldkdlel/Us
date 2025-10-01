@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:us/models/appointment.dart';
 import 'package:us/theme/us_colors.dart';
 
-import 'header.dart';
 import 'section.dart';
 import 'today_appointment_card.dart';
-import 'upcoming_appointment_tile.dart';
 
 class CalendarTab extends StatefulWidget {
   const CalendarTab({
@@ -108,7 +106,7 @@ class _CalendarTabState extends State<CalendarTab> {
               const SizedBox(width: 4),
               _MonthButton(
                 icon: Icons.chevron_right,
-                onPressed: _canGoToMonth(1) ? () => _goToMonth(1) : null,
+                onPressed: () => _goToMonth(1),
               ),
             ],
           ),
@@ -159,9 +157,6 @@ class _CalendarTabState extends State<CalendarTab> {
         _focusedMonth.year,
         _focusedMonth.month + offset,
       );
-      if (_isAfterCurrentMonth(newMonth)) {
-        return;
-      }
       _focusedMonth = newMonth;
       final isCurrentMonth =
           newMonth.year == _today.year && newMonth.month == _today.month;
@@ -252,7 +247,7 @@ class _MonthButton extends StatelessWidget {
           foregroundColor: onPressed != null
               ? Colors.grey[700]
               : Colors.grey[400],
-          backgroundColor: const Color(0xFFF1F5F9),
+          backgroundColor: const Color(0xFFE5E7EB),
           padding: EdgeInsets.zero,
         ),
         child: Icon(icon, size: 20),
