@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/home/home_screen.dart';
 import 'theme/us_colors.dart';
@@ -10,6 +11,15 @@ class UsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ko', 'KR'),
+        Locale('en', 'US'), // Add other supported locales here
+      ],
       title: 'Us',
       theme: ThemeData(
         useMaterial3: true,
@@ -18,7 +28,6 @@ class UsApp extends StatelessWidget {
         fontFamily: 'SpoqaHanSansNeo',
       ),
       home: const HomeScreen(),
-      supportedLocales: [Locale('ko', 'KR')],
     );
   }
 }

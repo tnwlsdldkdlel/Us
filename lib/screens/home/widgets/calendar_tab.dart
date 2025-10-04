@@ -198,14 +198,6 @@ class _CalendarTabState extends State<CalendarTab> {
   DateTime _normalizeDate(DateTime date) =>
       DateTime(date.year, date.month, date.day);
 
-  bool _canGoToMonth(int offset) {
-    final candidate = DateTime(
-      _focusedMonth.year,
-      _focusedMonth.month + offset,
-    );
-    return !_isAfterCurrentMonth(candidate);
-  }
-
   bool _isAfterCurrentMonth(DateTime date) {
     if (date.year > _today.year) {
       return true;
