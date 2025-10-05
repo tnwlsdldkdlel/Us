@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:us/screens/appointment_detail/appointment_edit_screen.dart';
+import 'package:us/screens/appointment_detail/screens/appointment_edit_screen.dart';
 
 import 'package:us/models/appointment.dart';
 import 'package:us/theme/us_colors.dart';

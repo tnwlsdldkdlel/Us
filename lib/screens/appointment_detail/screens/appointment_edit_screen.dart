@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:us/data/mock_friends.dart';
+import 'package:us/data/friends/friend_repository.dart';
 import 'package:us/models/appointment.dart';
 import 'package:us/models/friend.dart';
 import 'package:us/models/place_suggestion.dart';
@@ -10,19 +10,21 @@ import 'package:us/widgets/custom_calendar_dialog.dart';
 import 'package:us/widgets/location_picker_bottom_sheet.dart';
 import 'package:us/widgets/people_picker_bottom_sheet.dart';
 
-import 'widgets/basic_info_section.dart';
-import 'widgets/edit_header.dart';
-import 'widgets/participant_section.dart';
+import 'package:us/screens/appointment_detail/widgets/basic_info_section.dart';
+import 'package:us/screens/appointment_detail/widgets/edit_header.dart';
+import 'package:us/screens/appointment_detail/widgets/participant_section.dart';
 
 class AppointmentEditScreen extends StatefulWidget {
   const AppointmentEditScreen({
     super.key,
     required this.detail,
     this.isNew = false,
-  });
+    FriendRepository? friendRepository,
+  }) : friendRepository = friendRepository ?? const MockFriendRepository();
 
   final AppointmentDetail detail;
   final bool isNew;
+  final FriendRepository friendRepository;
 
   @override
   State<AppointmentEditScreen> createState() => _AppointmentEditScreenState();
@@ -35,6 +37,7 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   List<Friend> _selectedFriends = const [];
+  late final List<Friend> _allFriends;
 
   @override
   void initState() {
@@ -46,11 +49,13 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
     _selectedDate = widget.detail.date;
     _selectedTime = widget.detail.startTime;
 
+    _allFriends = widget.friendRepository.fetchAllFriends();
+
     final participantNames = widget.detail.participants
         .map((p) => p.name)
         .toSet();
     _selectedFriends = [
-      for (final friend in mockFriends)
+      for (final friend in _allFriends)
         if (participantNames.contains(friend.name)) friend,
     ];
   }
@@ -198,7 +203,10 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: PeoplePickerBottomSheet(initialSelected: _selectedFriends),
+          child: PeoplePickerBottomSheet(
+            initialSelected: _selectedFriends,
+            friends: _allFriends,
+          ),
         ),
       ),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'screens/home/home_screen.dart';
+import 'screens/home/screens/home_screen.dart';
 import 'theme/us_colors.dart';
 
 class UsApp extends StatelessWidget {
@@ -27,7 +27,7 @@ class UsApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF6F7F9),
         fontFamily: 'SpoqaHanSansNeo',
       ),
-      home: const HomeScreen(),
+      home: HomeScreen(),
     );
   }
 }

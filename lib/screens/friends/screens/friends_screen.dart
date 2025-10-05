@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:us/data/mock_friends.dart';
+import 'package:us/data/friends/friend_repository.dart';
 import 'package:us/models/friend.dart';
+import 'package:us/screens/friends/models/friends_view_model.dart';
 import 'package:us/screens/home/widgets/section.dart';
 import 'package:us/theme/us_colors.dart';
 
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+  const FriendsScreen({
+    super.key,
+    FriendRepository? friendRepository,
+  }) : friendRepository = friendRepository ?? const MockFriendRepository();
+
+  final FriendRepository friendRepository;
 
   @override
   State<FriendsScreen> createState() => _FriendsScreenState();
@@ -13,117 +19,122 @@ class FriendsScreen extends StatefulWidget {
 
 class _FriendsScreenState extends State<FriendsScreen> {
   late final TextEditingController _searchController;
-  List<Friend> _myFriends = [];
-  List<Friend> _receivedRequests = [];
-  List<Friend> _sentRequests = [];
-
-  List<Friend> _filteredMyFriends = [];
-  List<Friend> _filteredReceivedRequests = [];
-  List<Friend> _filteredSentRequests = [];
+  late final FriendsViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _searchController.addListener(_filterLists);
-
-    // Mock data for demonstration
-    _receivedRequests = mockFriends.sublist(0, 2);
-    _sentRequests = mockFriends.sublist(2, 4);
-    _myFriends = mockFriends.sublist(4);
-
-    _filteredReceivedRequests = List.of(_receivedRequests);
-    _filteredSentRequests = List.of(_sentRequests);
-    _filteredMyFriends = List.of(_myFriends);
+    _viewModel = FriendsViewModel(repository: widget.friendRepository)
+      ..loadFriends();
+    _searchController.addListener(_onQueryChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterLists);
+    _searchController.removeListener(_onQueryChanged);
     _searchController.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
-  void _filterLists() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredMyFriends = _myFriends
-          .where((f) => f.name.toLowerCase().contains(query))
-          .toList();
-      _filteredReceivedRequests = _receivedRequests
-          .where((f) => f.name.toLowerCase().contains(query))
-          .toList();
-      _filteredSentRequests = _sentRequests
-          .where((f) => f.name.toLowerCase().contains(query))
-          .toList();
-    });
+  void _onQueryChanged() {
+    _viewModel.updateQuery(_searchController.text);
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: '친구 검색하세요',
-                      filled: true,
-                      fillColor: const Color(0xFFF3F4F6),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: Color(0xFF9CA3AF),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+    return AnimatedBuilder(
+      animation: _viewModel,
+      builder: (context, _) {
+        final state = _viewModel.state;
+
+        return DefaultTabController(
+          length: 3,
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Stack(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: '친구 검색하세요',
+                              filled: true,
+                              fillColor: const Color(0xFFF3F4F6),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const TabBar(
+                      indicatorColor: UsColors.primary,
+                      labelColor: UsColors.primary,
+                      unselectedLabelColor: Colors.grey,
+                      labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                      tabs: [
+                        Tab(text: '친구'),
+                        Tab(text: '받은 요청'),
+                        Tab(text: '보낸 요청'),
+                      ],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _buildFriendList(
+                            state.filteredMyFriends,
+                            isLoading: state.isLoading,
+                          ),
+                          _buildRequestList(
+                            state.filteredReceivedRequests,
+                            isLoading: state.isLoading,
+                          ),
+                          _buildSentRequestList(
+                            state.filteredSentRequests,
+                            isLoading: state.isLoading,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (state.isLoading)
+                  const Align(
+                    alignment: Alignment.topCenter,
+                    child: LinearProgressIndicator(minHeight: 2),
                   ),
-                ],
-              ),
-            ),
-            const TabBar(
-              indicatorColor: UsColors.primary,
-              labelColor: UsColors.primary,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: TextStyle(fontWeight: FontWeight.bold),
-              tabs: [
-                Tab(text: '친구'),
-                Tab(text: '받은 요청'),
-                Tab(text: '보낸 요청'),
               ],
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildFriendList(_filteredMyFriends),
-                  _buildRequestList(_filteredReceivedRequests),
-                  _buildSentRequestList(_filteredSentRequests),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildFriendList(List<Friend> friends) {
+  Widget _buildFriendList(List<Friend> friends, {bool isLoading = false}) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (friends.isEmpty) {
       return const Center(child: Text('친구가 없습니다.'));
     }
@@ -136,7 +147,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildRequestList(List<Friend> requests) {
+  Widget _buildRequestList(List<Friend> requests, {bool isLoading = false}) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (requests.isEmpty) {
       return const Center(child: Text('받은 친구 요청이 없습니다.'));
     }
@@ -150,7 +164,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildSentRequestList(List<Friend> requests) {
+  Widget _buildSentRequestList(List<Friend> requests,
+      {bool isLoading = false}) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (requests.isEmpty) {
       return const Center(child: Text('보낸 친구 요청이 없습니다.'));
     }

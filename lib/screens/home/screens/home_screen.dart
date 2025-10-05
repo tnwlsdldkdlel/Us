@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 
-import 'package:us/data/mock_appointments.dart';
+import 'package:us/data/appointments/appointment_repository.dart';
 import 'package:us/models/appointment.dart';
-import 'package:us/screens/appointment_detail/appointment_detail_screen.dart';
-import 'package:us/screens/appointment_detail/appointment_edit_screen.dart';
-import 'package:us/screens/calendar/calendar_screen.dart';
-import 'package:us/screens/home/friends_screen.dart';
+import 'package:us/screens/appointment_detail/screens/appointment_detail_screen.dart';
+import 'package:us/screens/appointment_detail/screens/appointment_edit_screen.dart';
+import 'package:us/screens/calendar/screens/calendar_screen.dart';
+import 'package:us/screens/friends/screens/friends_screen.dart';
+import 'package:us/screens/home/models/home_view_model.dart';
+import 'package:us/screens/home/widgets/widgets.dart';
 import 'package:us/theme/us_colors.dart';
 
-import 'widgets/widgets.dart';
-
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  HomeScreen({
+    super.key,
+    AppointmentRepository? appointmentRepository,
+  }) : appointmentRepository =
+            appointmentRepository ?? MockAppointmentRepository();
+
+  final AppointmentRepository appointmentRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -19,13 +25,27 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  late final HomeViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = HomeViewModel(repository: widget.appointmentRepository)
+      ..loadAppointments();
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
 
   void _openAppointmentDetail(Appointment appointment) {
     final detailId = appointment.detailId;
     if (detailId == null) {
       return;
     }
-    final detail = mockAppointmentDetails[detailId];
+    final detail = _viewModel.findDetail(detailId);
     if (detail == null) {
       return;
     }
@@ -38,18 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openCreateAppointment() {
-    final now = DateTime.now();
-    final newDetail = AppointmentDetail(
-      id: 'new-${now.microsecondsSinceEpoch}',
-      title: '',
-      location: '',
-      date: DateTime(now.year, now.month, now.day),
-      startTime: TimeOfDay.fromDateTime(now),
-      endTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
-      participants: const [],
-      comments: const [],
-      description: '',
-    );
+    final newDetail = _viewModel.createDraftDetail();
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -63,7 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (detailId == null) {
       return;
     }
-    final detail = mockAppointmentDetails[detailId];
+    final detail =
+        detailId.isEmpty ? null : _viewModel.findDetail(detailId);
     if (detail == null) {
       return;
     }
@@ -77,45 +87,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todayAppointments = mockTodayAppointments;
-    final upcomingAppointments = mockUpcomingAppointments;
+    return AnimatedBuilder(
+      animation: _viewModel,
+      builder: (context, _) {
+        final state = _viewModel.state;
 
-    final tabs = [
-      _HomeOverviewTab(
-        key: const ValueKey('home_tab'),
-        todayAppointments: todayAppointments,
-        upcomingAppointments: upcomingAppointments,
-        onTodayAppointmentTap: _openAppointmentDetail,
-        onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
-        onCreateAppointment: _openCreateAppointment,
-      ),
-      CalendarScreen(
-        key: const ValueKey('calendar_tab'),
-        todayAppointments: todayAppointments,
-        upcomingAppointments: upcomingAppointments,
-        onTodayAppointmentTap: _openAppointmentDetail,
-        onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
-        onCreateAppointment: _openCreateAppointment,
-      ),
-      const FriendsScreen(key: ValueKey('friends_tab')),
-    ];
+        final tabs = [
+          _HomeOverviewTab(
+            key: const ValueKey('home_tab'),
+            todayAppointments: state.todayAppointments,
+            upcomingAppointments: state.upcomingAppointments,
+            onTodayAppointmentTap: _openAppointmentDetail,
+            onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
+            onCreateAppointment: _openCreateAppointment,
+          ),
+          CalendarScreen(
+            key: const ValueKey('calendar_tab'),
+            todayAppointments: state.todayAppointments,
+            upcomingAppointments: state.upcomingAppointments,
+            onTodayAppointmentTap: _openAppointmentDetail,
+            onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
+            onCreateAppointment: _openCreateAppointment,
+          ),
+          const FriendsScreen(key: ValueKey('friends_tab')),
+        ];
 
-    return Scaffold(
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: tabs[_currentIndex],
-        ),
-      ),
-      bottomNavigationBar: HomeNavigationBar(
-        currentIndex: _currentIndex,
-        onItemSelected: (index) {
-          if (index >= tabs.length) {
-            return;
-          }
-          setState(() => _currentIndex = index);
-        },
-      ),
+        return Scaffold(
+          body: SafeArea(
+            child: Stack(
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: tabs[_currentIndex],
+                ),
+                if (state.isLoading)
+                  const Align(
+                    alignment: Alignment.topCenter,
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: HomeNavigationBar(
+            currentIndex: _currentIndex,
+            onItemSelected: (index) {
+              if (index >= tabs.length) {
+                return;
+              }
+              setState(() => _currentIndex = index);
+            },
+          ),
+        );
+      },
     );
   }
 }

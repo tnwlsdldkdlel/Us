@@ -2,13 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:us/data/mock_friends.dart';
 import 'package:us/models/friend.dart';
 import 'package:us/theme/us_colors.dart';
 
 class PeoplePickerBottomSheet extends StatefulWidget {
-  const PeoplePickerBottomSheet({super.key, this.initialSelected});
+  const PeoplePickerBottomSheet({
+    super.key,
+    required this.friends,
+    this.initialSelected,
+  });
 
+  final List<Friend> friends;
   final List<Friend>? initialSelected;
 
   @override
@@ -27,7 +31,7 @@ class _PeoplePickerBottomSheetState extends State<PeoplePickerBottomSheet> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _friends = List.of(mockFriends);
+    _friends = List.of(widget.friends);
     if (widget.initialSelected != null) {
       _selectedIds.addAll(widget.initialSelected!.map((f) => f.id));
     }

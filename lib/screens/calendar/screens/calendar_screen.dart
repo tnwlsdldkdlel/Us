@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:us/models/appointment.dart';
-import 'package:us/theme/us_colors.dart';
 import 'package:us/screens/home/widgets/section.dart';
 import 'package:us/screens/home/widgets/today_appointment_card.dart';
+import 'package:us/screens/calendar/models/calendar_view_model.dart';
+import 'package:us/theme/us_colors.dart';
 
-import 'models/calendar_view_model.dart';
+import 'package:us/models/appointment.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({
