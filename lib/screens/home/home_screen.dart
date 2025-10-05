@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:us/data/mock_appointments.dart';
 import 'package:us/models/appointment.dart';
 import 'package:us/screens/appointment_detail/appointment_detail_screen.dart';
+import 'package:us/screens/appointment_detail/appointment_edit_screen.dart';
+import 'package:us/screens/calendar/calendar_screen.dart';
+import 'package:us/screens/home/friends_screen.dart';
 import 'package:us/theme/us_colors.dart';
 
 import 'widgets/widgets.dart';
@@ -28,7 +31,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(detail: detail),
+        builder: (_) =>
+            AppointmentDetailScreen(detail: detail, title: detail.title),
+      ),
+    );
+  }
+
+  void _openCreateAppointment() {
+    final now = DateTime.now();
+    final newDetail = AppointmentDetail(
+      id: 'new-${now.microsecondsSinceEpoch}',
+      title: '',
+      location: '',
+      date: DateTime(now.year, now.month, now.day),
+      startTime: TimeOfDay.fromDateTime(now),
+      endTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+      participants: const [],
+      comments: const [],
+      description: '',
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AppointmentEditScreen(detail: newDetail, isNew: true),
       ),
     );
   }
@@ -44,7 +69,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(detail: detail),
+        builder: (_) =>
+            AppointmentDetailScreen(detail: detail, title: detail.title),
       ),
     );
   }
@@ -61,14 +87,17 @@ class _HomeScreenState extends State<HomeScreen> {
         upcomingAppointments: upcomingAppointments,
         onTodayAppointmentTap: _openAppointmentDetail,
         onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
+        onCreateAppointment: _openCreateAppointment,
       ),
-      CalendarTab(
+      CalendarScreen(
         key: const ValueKey('calendar_tab'),
         todayAppointments: todayAppointments,
         upcomingAppointments: upcomingAppointments,
         onTodayAppointmentTap: _openAppointmentDetail,
         onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
+        onCreateAppointment: _openCreateAppointment,
       ),
+      const FriendsScreen(key: ValueKey('friends_tab')),
     ];
 
     return Scaffold(
@@ -98,12 +127,14 @@ class _HomeOverviewTab extends StatelessWidget {
     required this.upcomingAppointments,
     required this.onTodayAppointmentTap,
     required this.onUpcomingAppointmentTap,
+    required this.onCreateAppointment,
   });
 
   final List<Appointment> todayAppointments;
   final List<UpcomingAppointment> upcomingAppointments;
   final void Function(Appointment) onTodayAppointmentTap;
   final void Function(UpcomingAppointment) onUpcomingAppointmentTap;
+  final VoidCallback onCreateAppointment;
 
   @override
   Widget build(BuildContext context) {
@@ -114,20 +145,22 @@ class _HomeOverviewTab extends StatelessWidget {
         children: [
           const HomeHeader(),
           const SizedBox(height: 16),
-          const CreateInviteCard(),
+          CreateInviteCard(onCreateAppointment: onCreateAppointment),
           const SizedBox(height: 24),
           Section(
             title: '🔥 오늘의 약속',
-            child: Column(
-              children: [
-                for (final appointment in todayAppointments) ...[
-                  TodayAppointmentCard(
-                    appointment: appointment,
-                    onTap: () => onTodayAppointmentTap(appointment),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ],
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: todayAppointments.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final appointment = todayAppointments[index];
+                return TodayAppointmentCard(
+                  appointment: appointment,
+                  onTap: () => onTodayAppointmentTap(appointment),
+                );
+              },
             ),
           ),
           const SizedBox(height: 24),
@@ -139,16 +172,18 @@ class _HomeOverviewTab extends StatelessWidget {
                 context,
               ).textTheme.labelLarge?.copyWith(color: UsColors.primary),
             ),
-            child: Column(
-              children: [
-                for (final appointment in upcomingAppointments) ...[
-                  UpcomingAppointmentTile(
-                    appointment: appointment,
-                    onTap: () => onUpcomingAppointmentTap(appointment),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ],
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: upcomingAppointments.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final appointment = upcomingAppointments[index];
+                return UpcomingAppointmentTile(
+                  appointment: appointment,
+                  onTap: () => onUpcomingAppointmentTap(appointment),
+                );
+              },
             ),
           ),
         ],

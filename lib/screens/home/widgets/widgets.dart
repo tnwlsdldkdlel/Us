@@ -1,5 +1,4 @@
 export 'create_invite_card.dart';
-export 'calendar_tab.dart';
 export 'header.dart';
 export 'home_navigation_bar.dart';
 export 'participant_avatars.dart';

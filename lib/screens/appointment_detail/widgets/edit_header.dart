@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppointmentEditHeader extends StatelessWidget {
-  const AppointmentEditHeader({super.key, required this.onBackRequested});
+  const AppointmentEditHeader({
+    super.key,
+    required this.onBackRequested,
+    required this.title,
+    this.onSubmit,
+  });
 
   final VoidCallback onBackRequested;
+  final String title;
+  final VoidCallback? onSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -20,26 +27,27 @@ class AppointmentEditHeader extends StatelessWidget {
             ),
           ),
           Text(
-            '약속 수정하기',
+            title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0F172A),
             ),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0F172A),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+          if (onSubmit != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: onSubmit,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F172A),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
+                child: const Text('완료'),
               ),
-              child: const Text('완료'),
             ),
-          ),
         ],
       ),
     );

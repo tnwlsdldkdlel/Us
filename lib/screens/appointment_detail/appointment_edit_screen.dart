@@ -15,9 +15,14 @@ import 'widgets/edit_header.dart';
 import 'widgets/participant_section.dart';
 
 class AppointmentEditScreen extends StatefulWidget {
-  const AppointmentEditScreen({super.key, required this.detail});
+  const AppointmentEditScreen({
+    super.key,
+    required this.detail,
+    this.isNew = false,
+  });
 
   final AppointmentDetail detail;
+  final bool isNew;
 
   @override
   State<AppointmentEditScreen> createState() => _AppointmentEditScreenState();
@@ -206,13 +211,15 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
   Future<void> _confirmExit(BuildContext context) async {
     final shouldExit = await CommonConfirmDialog.show(
       context,
-      message: '약속수정을 취소할까요?',
+      message: widget.isNew ? '약속 만들기를 취소할까요?' : '약속 수정을 취소할까요?',
       confirmLabel: '계속하기',
       cancelLabel: '취소',
       confirmColor: const Color(0xFF10B981),
       cancelColor: const Color(0xFFE5E7EB),
-      onConfirm: () => {},
-      onCancel: () => Navigator.of(context).maybePop(),
+      onConfirm: () {},
+      onCancel: () {
+        Navigator.of(context).maybePop();
+      },
     );
 
     if (shouldExit == true) {
@@ -233,6 +240,7 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
             children: [
               AppointmentEditHeader(
                 onBackRequested: () => _confirmExit(context),
+                title: widget.isNew ? '약속 만들기' : '약속 수정하기',
               ),
               Expanded(
                 child: SingleChildScrollView(

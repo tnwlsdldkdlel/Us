@@ -93,7 +93,7 @@ class _LocationPickerBottomSheetState extends State<LocationPickerBottomSheet> {
                   icon: const Icon(Icons.close_rounded),
                 ),
                 Text(
-                  '위치 추가하기',
+                  '위치',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF0F172A),

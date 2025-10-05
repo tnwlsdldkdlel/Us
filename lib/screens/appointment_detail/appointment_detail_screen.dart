@@ -5,9 +5,14 @@ import 'package:us/models/appointment.dart';
 import 'package:us/theme/us_colors.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
-  const AppointmentDetailScreen({super.key, required this.detail});
+  const AppointmentDetailScreen({
+    super.key,
+    required this.detail,
+    required this.title,
+  });
 
   final AppointmentDetail detail;
+  final String title;
 
   @override
   State<AppointmentDetailScreen> createState() =>

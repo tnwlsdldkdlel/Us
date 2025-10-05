@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:us/theme/us_colors.dart';
 
 class CreateInviteCard extends StatelessWidget {
-  const CreateInviteCard({super.key});
+  const CreateInviteCard({super.key, required this.onCreateAppointment});
+  final VoidCallback onCreateAppointment;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +66,9 @@ class CreateInviteCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: () {},
+              onPressed: () {
+                onCreateAppointment();
+              },
               child: const Text(
                 '약속 만들기',
                 style: TextStyle(fontWeight: FontWeight.bold),

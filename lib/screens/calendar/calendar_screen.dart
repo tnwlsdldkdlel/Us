@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'package:us/models/appointment.dart';
 import 'package:us/theme/us_colors.dart';
+import 'package:us/screens/home/widgets/section.dart';
+import 'package:us/screens/home/widgets/today_appointment_card.dart';
 
-import 'section.dart';
-import 'today_appointment_card.dart';
+import 'models/calendar_view_model.dart';
 
-class CalendarTab extends StatefulWidget {
-  const CalendarTab({
+class CalendarScreen extends StatefulWidget {
+  const CalendarScreen({
     super.key,
     required this.todayAppointments,
     required this.upcomingAppointments,
@@ -23,82 +24,87 @@ class CalendarTab extends StatefulWidget {
   final VoidCallback onCreateAppointment;
 
   @override
-  State<CalendarTab> createState() => _CalendarTabState();
+  State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarTabState extends State<CalendarTab> {
-  late DateTime _focusedMonth;
-  late DateTime _selectedDate;
-  late DateTime _today;
+class _CalendarScreenState extends State<CalendarScreen> {
+  final CalendarViewModel _viewModel = CalendarViewModel();
 
   static const _weekdayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
   @override
-  void initState() {
-    super.initState();
-    _today = _normalizeDate(DateTime.now());
-    _focusedMonth = DateTime(_today.year, _today.month);
-    _selectedDate = _today;
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final monthLabel = '${_focusedMonth.year}년 ${_focusedMonth.month}월';
+    return AnimatedBuilder(
+      animation: _viewModel,
+      builder: (context, _) {
+        final monthLabel =
+            '${_viewModel.focusedMonth.year}년 ${_viewModel.focusedMonth.month}월';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-          child: Row(
-            children: [
-              Text(
-                monthLabel,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: widget.onCreateAppointment,
-                icon: const Icon(Icons.add_rounded),
-                color: UsColors.primary,
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _buildCalendarCard(context),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Section(
-              title: '🔥 오늘의 약속',
-              child: Column(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
                 children: [
-                  for (final appointment in widget.todayAppointments) ...[
-                    TodayAppointmentCard(
-                      appointment: appointment,
-                      onTap: () => widget.onTodayAppointmentTap(appointment),
+                  Text(
+                    monthLabel,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
                     ),
-                    const SizedBox(height: 12),
-                  ],
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: widget.onCreateAppointment,
+                    icon: const Icon(Icons.add_rounded),
+                    color: UsColors.primary,
+                  ),
                 ],
               ),
             ),
-          ),
-        ),
-      ],
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildCalendarCard(context, _viewModel.visibleDates),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                children: [
+                  Section(
+                    child: Column(
+                      children: [
+                        for (final appointment in widget.todayAppointments) ...[
+                          TodayAppointmentCard(
+                            appointment: appointment,
+                            onTap: () =>
+                                widget.onTodayAppointmentTap(appointment),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildCalendarCard(BuildContext context) {
-    final dates = _visibleDates();
-
+  Widget _buildCalendarCard(BuildContext context, List<DateTime> dates) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onHorizontalDragEnd: _onHorizontalDragEnd,
@@ -106,7 +112,6 @@ class _CalendarTabState extends State<CalendarTab> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE3E7ED)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -137,21 +142,23 @@ class _CalendarTabState extends State<CalendarTab> {
               ],
             ),
             const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: dates.length,
-              itemBuilder: (context, index) => _CalendarDay(
-                date: dates[index],
-                focusedMonth: _focusedMonth,
-                today: _today,
-                selectedDate: _selectedDate,
-                onSelected: _onDaySelected,
+            SizedBox(
+              height: 300,
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: dates.length,
+                itemBuilder: (context, index) => _CalendarDay(
+                  date: dates[index],
+                  focusedMonth: _viewModel.focusedMonth,
+                  today: _viewModel.today,
+                  selectedDate: _viewModel.selectedDate,
+                  onSelected: _viewModel.selectDate,
+                ),
               ),
             ),
           ],
@@ -166,67 +173,10 @@ class _CalendarTabState extends State<CalendarTab> {
       return;
     }
     if (velocity < 0) {
-      _goToMonth(1);
+      _viewModel.goToMonth(1);
     } else {
-      _goToMonth(-1);
+      _viewModel.goToMonth(-1);
     }
-  }
-
-  void _goToMonth(int offset) {
-    setState(() {
-      final newMonth = DateTime(
-        _focusedMonth.year,
-        _focusedMonth.month + offset,
-      );
-      _focusedMonth = newMonth;
-      final isCurrentMonth =
-          newMonth.year == _today.year && newMonth.month == _today.month;
-      _selectedDate = isCurrentMonth
-          ? _today
-          : DateTime(newMonth.year, newMonth.month, 1);
-    });
-  }
-
-  void _onDaySelected(DateTime date) {
-    setState(() {
-      final normalized = _normalizeDate(date);
-      if (_isAfterCurrentMonth(normalized)) {
-        return;
-      }
-      _selectedDate = normalized;
-      if (normalized.year != _focusedMonth.year ||
-          normalized.month != _focusedMonth.month) {
-        _focusedMonth = DateTime(normalized.year, normalized.month);
-      }
-    });
-  }
-
-  List<DateTime> _visibleDates() {
-    final firstDayOfMonth = DateTime(
-      _focusedMonth.year,
-      _focusedMonth.month,
-      1,
-    );
-    final firstWeekday = firstDayOfMonth.weekday % 7; // Make Sunday 0.
-    final firstGridDay = firstDayOfMonth.subtract(Duration(days: firstWeekday));
-
-    return List<DateTime>.generate(
-      42,
-      (index) => _normalizeDate(firstGridDay.add(Duration(days: index))),
-    );
-  }
-
-  DateTime _normalizeDate(DateTime date) =>
-      DateTime(date.year, date.month, date.day);
-
-  bool _isAfterCurrentMonth(DateTime date) {
-    if (date.year > _today.year) {
-      return true;
-    }
-    if (date.year < _today.year) {
-      return false;
-    }
-    return date.month > _today.month;
   }
 
   Color _weekdayColor(int index) {
