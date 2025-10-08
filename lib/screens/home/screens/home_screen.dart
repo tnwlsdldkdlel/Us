@@ -8,6 +8,7 @@ import 'package:us/screens/calendar/screens/calendar_screen.dart';
 import 'package:us/screens/friends/screens/friends_screen.dart';
 import 'package:us/screens/home/models/home_view_model.dart';
 import 'package:us/screens/home/widgets/widgets.dart';
+import 'package:us/screens/settings/screens/settings_screen.dart';
 import 'package:us/theme/us_colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -107,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onCreateAppointment: _openCreateAppointment,
           ),
           const FriendsScreen(key: ValueKey('friends_tab')),
+          const SettingsScreen(key: ValueKey('settings_tab')),
         ];
 
         return Scaffold(
