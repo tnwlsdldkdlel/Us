@@ -12,6 +12,9 @@ Dart 기본 규약과 `analysis_options.yaml`에서 활성화한 `flutter_lints`
 ## 테스트 가이드라인
 새 기능에는 최소 한 개 이상의 단위 혹은 위젯 테스트를 추가합니다. 테스트 파일은 기능과 동일한 패키지 경로를 반영해 `test/feature_name/` 하위에 배치하고, 명칭은 `whenExpectedOutcome` 패턴의 그룹이나 설명을 사용해 동작을 명확히 합니다. CI가 구성되기 전까지는 로컬에서 `flutter test --coverage`를 실행해 회귀를 방지하고, 주요 위젯 변경 시 스크린샷 테스트를 고려하십시오.
 
+## 디자인 레퍼런스
+새로운 디자인 자산을 만들거나 기존 화면을 재설계할 때는 `__prompts/_docs/design.md` 문서를 우선 검토해 색상, 타이포그래피, 레이아웃 원칙을 준수하십시오.
+
 ## 커밋 및 PR 지침
 Git 로그는 `feat:` 접두사 등 Conventional Commits 패턴을 따릅니다. 커밋 메시지는 한글 또는 영어 모두 가능하지만, 유형(`feat`, `fix`, `refactor`, `test`)과 핵심 변경 사항을 한 문장으로 요약하십시오. PR에는 변경 의도, 테스트 결과(`flutter analyze`, `flutter test`)를 체크리스트로 명시하고 UI 변경 시 전·후 비교 스크린샷을 포함합니다. 관련 이슈가 있다면 `Closes #번호` 형식으로 링크해 추적 가능성을 높이십시오.
 

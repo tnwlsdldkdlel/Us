@@ -17,34 +17,39 @@ class TodayAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.radiusMedium),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.spacingM),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                width: 8,
+                width: AppSpacing.spacingXs,
                 decoration: BoxDecoration(
-                  color: UsColors.primary,
-                  borderRadius: BorderRadius.circular(12),
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(
+                    AppRadius.radiusMedium / 2,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.spacingM),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,19 +66,22 @@ class TodayAppointmentCard extends StatelessWidget {
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(fontWeight: FontWeight.bold),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: AppSpacing.spacingXs),
                               Row(
                                 children: [
                                   Icon(
                                     Icons.place_rounded,
-                                    size: 16,
-                                    color: Colors.grey[600],
+                                    size: 20,
+                                    color: colorScheme.primary,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: AppSpacing.spacingXxs),
                                   Text(
                                     appointment.location,
                                     style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey[700]),
+                                        ?.copyWith(
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.72),
+                                        ),
                                   ),
                                 ],
                               ),
@@ -82,25 +90,27 @@ class TodayAppointmentCard extends StatelessWidget {
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                            horizontal: AppSpacing.spacingS,
+                            vertical: AppSpacing.spacingXs,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE6FAF3),
-                            borderRadius: BorderRadius.circular(14),
+                            color: colorScheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.radiusMedium,
+                            ),
                           ),
                           child: Text(
                             appointment.timeLabel,
                             style: Theme.of(context).textTheme.labelMedium
                                 ?.copyWith(
-                                  color: UsColors.primary,
+                                  color: colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.spacingM),
                     if ((appointment.description ?? '').isNotEmpty ||
                         appointment.participants.isNotEmpty)
                       Row(
@@ -110,17 +120,21 @@ class TodayAppointmentCard extends StatelessWidget {
                             child: Text(
                               appointment.description ?? '',
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Colors.grey[700]),
+                                  ?.copyWith(
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.72,
+                                    ),
+                                  ),
                             ),
                           ),
                           if (appointment.participants.isNotEmpty) ...[
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.spacingS),
                             ParticipantAvatars(appointment.participants),
                           ],
-                          const SizedBox(width: 8),
-                          const Icon(
+                          const SizedBox(width: AppSpacing.spacingXs),
+                          Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.black26,
+                            color: colorScheme.onSurface.withOpacity(0.3),
                           ),
                         ],
                       ),

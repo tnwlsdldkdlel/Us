@@ -7,15 +7,17 @@ class CreateInviteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.spacingL),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [UsColors.primaryLight, UsColors.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.radiusMedium),
         boxShadow: [
           BoxShadow(
             color: UsColors.primary.withOpacity(0.3),
@@ -36,15 +38,15 @@ class CreateInviteCard extends StatelessWidget {
                   children: [
                     Text(
                       '새로운 약속 시작하기',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.spacingXs),
                     Text(
                       '친구와 시간을 정하고 간편하게 초대하세요.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
@@ -53,7 +55,7 @@ class CreateInviteCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.spacingM),
           SizedBox(
             width: 140,
             child: OutlinedButton(
@@ -61,9 +63,12 @@ class CreateInviteCard extends StatelessWidget {
                 backgroundColor: Colors.white.withOpacity(0.2),
                 foregroundColor: Colors.white,
                 side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size(140, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.spacingM,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.radiusMedium),
                 ),
               ),
               onPressed: () {

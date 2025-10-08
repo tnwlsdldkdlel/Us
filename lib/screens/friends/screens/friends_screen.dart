@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:us/data/friends/friend_repository.dart';
 import 'package:us/models/friend.dart';
 import 'package:us/screens/friends/models/friends_view_model.dart';
-import 'package:us/screens/home/widgets/section.dart';
 import 'package:us/theme/us_colors.dart';
 
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({
-    super.key,
-    FriendRepository? friendRepository,
-  }) : friendRepository = friendRepository ?? const MockFriendRepository();
+  const FriendsScreen({super.key, FriendRepository? friendRepository})
+    : friendRepository = friendRepository ?? const MockFriendRepository();
 
   final FriendRepository friendRepository;
 
@@ -88,6 +85,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       ),
                     ),
                     const TabBar(
+                      dividerColor: Colors.grey,
                       indicatorColor: UsColors.primary,
                       labelColor: UsColors.primary,
                       unselectedLabelColor: Colors.grey,
@@ -164,8 +162,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildSentRequestList(List<Friend> requests,
-      {bool isLoading = false}) {
+  Widget _buildSentRequestList(
+    List<Friend> requests, {
+    bool isLoading = false,
+  }) {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -289,7 +289,7 @@ class _SentRequestTile extends StatelessWidget {
           ),
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.delete),
+            icon: const Icon(Icons.close_rounded),
             color: Colors.grey[400],
           ),
         ],
@@ -302,6 +302,81 @@ class _FriendTile extends StatelessWidget {
   const _FriendTile({required this.friend});
 
   final Friend friend;
+
+  void _showDeleteSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.radiusLarge),
+        ),
+      ),
+      builder: (context) {
+        final theme = Theme.of(context);
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '친구를 삭제하시겠어요?',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacingL),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE5E7EB),
+                    foregroundColor: theme.colorScheme.onSurface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppRadius.radiusMedium,
+                      ),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '취소',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacingS),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE11D48),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppRadius.radiusMedium,
+                      ),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '삭제',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -340,6 +415,11 @@ class _FriendTile extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: () => _showDeleteSheet(context),
+            icon: const Icon(Icons.close_rounded),
+            color: Colors.grey[500],
           ),
         ],
       ),

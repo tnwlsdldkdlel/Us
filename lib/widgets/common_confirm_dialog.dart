@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:us/theme/us_colors.dart';
+
 class CommonConfirmDialog extends StatelessWidget {
   const CommonConfirmDialog({
     super.key,
@@ -25,8 +27,8 @@ class CommonConfirmDialog extends StatelessWidget {
     required String message,
     String confirmLabel = '확인',
     String cancelLabel = '취소',
-    Color confirmColor = const Color(0xFF10B981),
-    Color cancelColor = const Color(0xFFE5E7EB),
+    Color confirmColor = AppColors.colorPrimary500,
+    Color cancelColor = AppColors.colorGray300,
     required VoidCallback onConfirm,
     VoidCallback? onCancel,
   }) {
@@ -47,23 +49,33 @@ class CommonConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.radiusLarge),
+      ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.spacingL,
+          AppSpacing.spacingL,
+          AppSpacing.spacingL,
+          AppSpacing.spacingL,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF111827),
+                color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.spacingL),
             Row(
               children: [
                 Expanded(
@@ -74,17 +86,22 @@ class CommonConfirmDialog extends StatelessWidget {
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: cancelColor,
-                      foregroundColor: const Color(0xFF4B5563),
+                      foregroundColor: colorScheme.onSurface.withOpacity(0.8),
                       side: BorderSide.none,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.radiusMedium,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size.fromHeight(48),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.spacingM,
+                      ),
                     ),
                     child: Text(cancelLabel),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.spacingS),
                 Expanded(
                   child: FilledButton(
                     onPressed: () {
@@ -93,9 +110,14 @@ class CommonConfirmDialog extends StatelessWidget {
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: confirmColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size.fromHeight(48),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.spacingM,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.radiusMedium,
+                        ),
                       ),
                     ),
                     child: Text(confirmLabel),

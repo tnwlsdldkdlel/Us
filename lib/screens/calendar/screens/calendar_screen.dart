@@ -142,9 +142,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 300,
+            Expanded(
               child: GridView.builder(
+                padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 7,

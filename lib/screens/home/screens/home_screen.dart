@@ -11,11 +11,9 @@ import 'package:us/screens/home/widgets/widgets.dart';
 import 'package:us/theme/us_colors.dart';
 
 class HomeScreen extends StatefulWidget {
-  HomeScreen({
-    super.key,
-    AppointmentRepository? appointmentRepository,
-  }) : appointmentRepository =
-            appointmentRepository ?? MockAppointmentRepository();
+  HomeScreen({super.key, AppointmentRepository? appointmentRepository})
+    : appointmentRepository =
+          appointmentRepository ?? MockAppointmentRepository();
 
   final AppointmentRepository appointmentRepository;
 
@@ -72,8 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (detailId == null) {
       return;
     }
-    final detail =
-        detailId.isEmpty ? null : _viewModel.findDetail(detailId);
+    final detail = detailId.isEmpty ? null : _viewModel.findDetail(detailId);
     if (detail == null) {
       return;
     }
@@ -162,21 +159,25 @@ class _HomeOverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.spacingM,
+        vertical: AppSpacing.spacingM,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const HomeHeader(),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.spacingM),
           CreateInviteCard(onCreateAppointment: onCreateAppointment),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.spacingL),
           Section(
             title: '🔥 오늘의 약속',
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: todayAppointments.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.spacingM),
               itemBuilder: (context, index) {
                 final appointment = todayAppointments[index];
                 return TodayAppointmentCard(
@@ -186,20 +187,21 @@ class _HomeOverviewTab extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.spacingL),
           Section(
             title: '다가오는 약속',
             trailing: Text(
               '전체보기',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: UsColors.primary),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: upcomingAppointments.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.spacingM),
               itemBuilder: (context, index) {
                 final appointment = upcomingAppointments[index];
                 return UpcomingAppointmentTile(
