@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:us/data/appointments/appointment_repository.dart';
+import 'package:us/data/appointments/supabase_appointment_repository.dart';
+import 'package:us/data/friends/friend_repository.dart';
+import 'package:us/data/friends/supabase_friend_repository.dart';
 import 'package:us/models/appointment.dart';
 import 'package:us/screens/appointment_detail/screens/appointment_detail_screen.dart';
 import 'package:us/screens/appointment_detail/screens/appointment_edit_screen.dart';
@@ -12,11 +15,16 @@ import 'package:us/screens/settings/screens/settings_screen.dart';
 import 'package:us/theme/us_colors.dart';
 
 class HomeScreen extends StatefulWidget {
-  HomeScreen({super.key, AppointmentRepository? appointmentRepository})
-    : appointmentRepository =
-          appointmentRepository ?? MockAppointmentRepository();
+  HomeScreen({
+    super.key,
+    AppointmentRepository? appointmentRepository,
+    FriendRepository? friendRepository,
+  })  : appointmentRepository =
+          appointmentRepository ?? SupabaseAppointmentRepository(),
+        friendRepository = friendRepository ?? SupabaseFriendRepository();
 
   final AppointmentRepository appointmentRepository;
+  final FriendRepository friendRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -29,8 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = HomeViewModel(repository: widget.appointmentRepository)
-      ..loadAppointments();
+    _viewModel = HomeViewModel(repository: widget.appointmentRepository);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.loadAppointments();
+    });
   }
 
   @override
@@ -39,48 +49,84 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _openAppointmentDetail(Appointment appointment) {
+  Future<void> _openAppointmentDetail(Appointment appointment) async {
     final detailId = appointment.detailId;
     if (detailId == null) {
       return;
     }
-    final detail = _viewModel.findDetail(detailId);
-    if (detail == null) {
+
+    final detail = await _viewModel.fetchDetail(detailId);
+    if (!mounted) {
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            AppointmentDetailScreen(detail: detail, title: detail.title),
-      ),
-    );
+    if (detail == null) {
+      _showMessage('약속 정보를 불러오지 못했습니다.');
+      return;
+    }
+    _navigateToDetail(detail);
   }
 
-  void _openCreateAppointment() {
-    final newDetail = _viewModel.createDraftDetail();
+  Future<void> _openCreateAppointment() async {
+    final draft = _viewModel.createDraftDetail();
 
-    Navigator.of(context).push(
+    final created = await Navigator.of(context).push<AppointmentDetail>(
       MaterialPageRoute(
-        builder: (_) => AppointmentEditScreen(detail: newDetail, isNew: true),
+        builder: (_) => AppointmentEditScreen(
+          detail: draft,
+          isNew: true,
+          appointmentRepository: widget.appointmentRepository,
+        ),
       ),
     );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (created != null) {
+      await _viewModel.loadAppointments();
+      if (!mounted) {
+        return;
+      }
+      _navigateToDetail(created);
+    }
   }
 
-  void _openUpcomingAppointmentDetail(UpcomingAppointment appointment) {
+  Future<void> _openUpcomingAppointmentDetail(
+    UpcomingAppointment appointment,
+  ) async {
     final detailId = appointment.detailId;
-    if (detailId == null) {
+    if (detailId == null || detailId.isEmpty) {
       return;
     }
-    final detail = detailId.isEmpty ? null : _viewModel.findDetail(detailId);
+
+    final detail = await _viewModel.fetchDetail(detailId);
+    if (!mounted) {
+      return;
+    }
     if (detail == null) {
+      _showMessage('약속 정보를 불러오지 못했습니다.');
       return;
     }
+    _navigateToDetail(detail);
+  }
+
+  void _navigateToDetail(AppointmentDetail detail) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            AppointmentDetailScreen(detail: detail, title: detail.title),
+        builder: (_) => AppointmentDetailScreen(
+          detail: detail,
+          title: detail.title,
+          appointmentRepository: widget.appointmentRepository,
+        ),
       ),
     );
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -107,7 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
             onUpcomingAppointmentTap: _openUpcomingAppointmentDetail,
             onCreateAppointment: _openCreateAppointment,
           ),
-          const FriendsScreen(key: ValueKey('friends_tab')),
+          FriendsScreen(
+            key: const ValueKey('friends_tab'),
+            friendRepository: widget.friendRepository,
+          ),
           const SettingsScreen(key: ValueKey('settings_tab')),
         ];
 
@@ -119,6 +168,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   duration: const Duration(milliseconds: 200),
                   child: tabs[_currentIndex],
                 ),
+                if (state.errorMessage != null)
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFF97316)),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Text(
+                          state.errorMessage!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFFB45309),
+                              ),
+                        ),
+                      ),
+                    ),
+                  ),
                 if (state.isLoading)
                   const Align(
                     alignment: Alignment.topCenter,
@@ -154,8 +227,8 @@ class _HomeOverviewTab extends StatelessWidget {
 
   final List<Appointment> todayAppointments;
   final List<UpcomingAppointment> upcomingAppointments;
-  final void Function(Appointment) onTodayAppointmentTap;
-  final void Function(UpcomingAppointment) onUpcomingAppointmentTap;
+  final Future<void> Function(Appointment) onTodayAppointmentTap;
+  final Future<void> Function(UpcomingAppointment) onUpcomingAppointmentTap;
   final VoidCallback onCreateAppointment;
 
   @override

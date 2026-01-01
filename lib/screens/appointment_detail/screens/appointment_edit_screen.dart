@@ -1,29 +1,38 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:us/data/appointments/appointment_repository.dart';
+import 'package:us/data/appointments/supabase_appointment_repository.dart';
 import 'package:us/data/friends/friend_repository.dart';
+import 'package:us/data/friends/supabase_friend_repository.dart';
 import 'package:us/models/appointment.dart';
+import 'package:us/models/appointment_draft.dart';
 import 'package:us/models/friend.dart';
 import 'package:us/models/place_suggestion.dart';
 import 'package:us/widgets/common_confirm_dialog.dart';
 import 'package:us/widgets/custom_calendar_dialog.dart';
 import 'package:us/widgets/location_picker_bottom_sheet.dart';
 import 'package:us/widgets/people_picker_bottom_sheet.dart';
+import 'package:us/theme/us_colors.dart';
 
 import 'package:us/screens/appointment_detail/widgets/basic_info_section.dart';
 import 'package:us/screens/appointment_detail/widgets/edit_header.dart';
 import 'package:us/screens/appointment_detail/widgets/participant_section.dart';
 
 class AppointmentEditScreen extends StatefulWidget {
-  const AppointmentEditScreen({
+  AppointmentEditScreen({
     super.key,
     required this.detail,
     this.isNew = false,
+    AppointmentRepository? appointmentRepository,
     FriendRepository? friendRepository,
-  }) : friendRepository = friendRepository ?? const MockFriendRepository();
+  })  : appointmentRepository =
+          appointmentRepository ?? SupabaseAppointmentRepository(),
+        friendRepository = friendRepository ?? SupabaseFriendRepository();
 
   final AppointmentDetail detail;
   final bool isNew;
+  final AppointmentRepository appointmentRepository;
   final FriendRepository friendRepository;
 
   @override
@@ -37,7 +46,11 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   List<Friend> _selectedFriends = const [];
-  late final List<Friend> _allFriends;
+  List<Friend> _allFriends = const [];
+  bool _isFriendsLoading = true;
+  bool _isSaving = false;
+  String? _errorMessage;
+  PlaceSuggestion? _selectedPlace;
 
   @override
   void initState() {
@@ -48,16 +61,9 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
       ..text = widget.detail.description ?? '';
     _selectedDate = widget.detail.date;
     _selectedTime = widget.detail.startTime;
+    _selectedPlace = null;
 
-    _allFriends = widget.friendRepository.fetchAllFriends();
-
-    final participantNames = widget.detail.participants
-        .map((p) => p.name)
-        .toSet();
-    _selectedFriends = [
-      for (final friend in _allFriends)
-        if (participantNames.contains(friend.name)) friend,
-    ];
+    _loadFriends();
   }
 
   @override
@@ -186,12 +192,133 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
     );
 
     if (suggestion != null && mounted) {
-      setState(() => _locationController.text = suggestion.name);
+      setState(() {
+        _selectedPlace = suggestion;
+        _locationController.text = suggestion.name;
+      });
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_isSaving) {
+      return;
+    }
+
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      _showError('약속 제목을 입력해주세요.');
+      return;
+    }
+
+    if (_locationController.text.trim().isEmpty) {
+      _showError('약속 장소를 선택해주세요.');
+      return;
+    }
+
+    final startAt = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+
+    final invitedIds = _selectedFriends
+        .map((friend) => friend.userId)
+        .where((id) => id != widget.detail.creatorId)
+        .toSet()
+        .toList(growable: false);
+
+    final draft = AppointmentDraft(
+      title: title,
+      startAt: startAt,
+      duration: const Duration(hours: 1),
+      locationName: _locationController.text.trim(),
+      description: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
+      address: _selectedPlace?.roadAddress ?? _selectedPlace?.address,
+      latitude: _selectedPlace?.latitude,
+      longitude: _selectedPlace?.longitude,
+      invitedFriendIds: invitedIds,
+    );
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = widget.isNew
+          ? await widget.appointmentRepository.createAppointment(draft)
+          : await widget.appointmentRepository.updateAppointment(
+              appointmentId: widget.detail.id,
+              draft: draft,
+            );
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(result);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showError('약속을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  void _showError(String message) {
+    setState(() {
+      _errorMessage = message;
+    });
+  }
+
+  Future<void> _loadFriends() async {
+    try {
+      final friends = await widget.friendRepository.fetchAllFriends();
+      if (!mounted) {
+        return;
+      }
+
+      final participantIds = widget.detail.participants
+          .where((participant) => participant.userId != widget.detail.creatorId)
+          .map((participant) => participant.userId)
+          .toSet();
+
+      setState(() {
+        _allFriends = friends;
+        _selectedFriends = [
+          for (final friend in friends)
+            if (participantIds.contains(friend.userId)) friend,
+        ];
+        _isFriendsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _allFriends = const [];
+        _selectedFriends = const [];
+        _isFriendsLoading = false;
+      });
     }
   }
 
   Future<void> _selectParticipants() async {
     FocusScope.of(context).unfocus();
+    if (_isFriendsLoading) {
+      await _loadFriends();
+      if (!mounted) {
+        return;
+      }
+    }
     final picked = await showModalBottomSheet<List<Friend>>(
       context: context,
       isScrollControlled: true,
@@ -249,6 +376,7 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
               AppointmentEditHeader(
                 onBackRequested: () => _confirmExit(context),
                 title: widget.isNew ? '약속 만들기' : '약속 수정하기',
+                onSubmit: _isSaving ? null : _handleSubmit,
               ),
               Expanded(
                 child: SingleChildScrollView(
@@ -264,8 +392,10 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
                         locationController: _locationController,
                         noteController: _noteController,
                         onLocationTap: _selectLocation,
-                        onLocationClear: () =>
-                            setState(() => _locationController.clear()),
+                        onLocationClear: () => setState(() {
+                          _locationController.clear();
+                          _selectedPlace = null;
+                        }),
                         selectedDate: _selectedDate,
                         selectedTime: _selectedTime,
                         onSelectDate: _selectDate,
@@ -279,14 +409,66 @@ class _AppointmentEditScreenState extends State<AppointmentEditScreen> {
                         onAdd: _selectParticipants,
                         onRemove: (friend) => setState(() {
                           _selectedFriends = List.of(_selectedFriends)
-                            ..removeWhere((f) => f.id == friend.id);
+                            ..removeWhere((f) => f.userId == friend.userId);
                         }),
                       ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7ED),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFF97316)),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: const Color(0xFFB45309),
+                                ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 96),
                     ],
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _isSaving ? null : _handleSubmit,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: UsColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    widget.isNew ? '약속 만들기' : '저장하기',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
           ),
         ),
       ),

@@ -2,15 +2,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:us/data/friends/friend_repository.dart';
 import 'package:us/models/friend.dart';
+import 'package:us/models/friendship_status.dart';
 import 'package:us/screens/friends/models/friends_view_model.dart';
 
 void main() {
   group('FriendsViewModel', () {
     late FriendsViewModel viewModel;
 
-    setUp(() {
-      viewModel = FriendsViewModel(repository: const MockFriendRepository())
-        ..loadFriends();
+    setUp(() async {
+      viewModel = FriendsViewModel(repository: const MockFriendRepository());
+      await viewModel.loadFriends();
     });
 
     test('loads friends collections', () {
@@ -49,9 +50,52 @@ void main() {
       final state = viewModel.state;
 
       expect(state.filteredMyFriends.length, state.myFriends.length);
-      expect(state.filteredReceivedRequests.length,
-          state.receivedRequests.length);
+      expect(
+        state.filteredReceivedRequests.length,
+        state.receivedRequests.length,
+      );
       expect(state.filteredSentRequests.length, state.sentRequests.length);
+    });
+
+    test('includes invited entries in sent requests', () {
+      final state = viewModel.state;
+
+      expect(
+        state.sentRequests
+            .where((friend) => friend.status == FriendshipStatus.invited)
+            .isNotEmpty,
+        isTrue,
+      );
+    });
+    test('separates collections by status', () {
+      final state = viewModel.state;
+
+      expect(
+        state.myFriends,
+        everyElement(
+          predicate<Friend>(
+            (friend) => friend.status == FriendshipStatus.accepted,
+          ),
+        ),
+      );
+      expect(
+        state.receivedRequests,
+        everyElement(
+          predicate<Friend>(
+            (friend) => friend.status == FriendshipStatus.requested,
+          ),
+        ),
+      );
+      expect(
+        state.sentRequests,
+        everyElement(
+          predicate<Friend>(
+            (friend) =>
+                friend.status == FriendshipStatus.requested ||
+                friend.status == FriendshipStatus.invited,
+          ),
+        ),
+      );
     });
   });
 }

@@ -38,14 +38,20 @@ enum AttendanceStatus { going, pending, declined }
 
 class ParticipantStatus {
   const ParticipantStatus({
+    required this.userId,
     required this.name,
     required this.status,
     required this.statusLabel,
     required this.avatarInitial,
     required this.avatarColor,
+    this.email,
+    this.avatarUrl,
   });
 
+  final String userId;
   final String name;
+  final String? email;
+  final String? avatarUrl;
   final AttendanceStatus status;
   final String statusLabel;
   final String avatarInitial;
@@ -74,7 +80,11 @@ class AppointmentDetail {
     required this.location,
     required this.participants,
     required this.comments,
+    required this.creatorId,
     this.description,
+    this.address,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -83,7 +93,43 @@ class AppointmentDetail {
   final TimeOfDay startTime;
   final TimeOfDay endTime;
   final String location;
+  final String creatorId;
   final String? description;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
   final List<ParticipantStatus> participants;
   final List<AppointmentComment> comments;
+
+  AppointmentDetail copyWith({
+    String? id,
+    String? title,
+    DateTime? date,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    String? location,
+    String? creatorId,
+    String? description,
+    String? address,
+    double? latitude,
+    double? longitude,
+    List<ParticipantStatus>? participants,
+    List<AppointmentComment>? comments,
+  }) {
+    return AppointmentDetail(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      location: location ?? this.location,
+      creatorId: creatorId ?? this.creatorId,
+      description: description ?? this.description,
+      address: address ?? this.address,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      participants: participants ?? this.participants,
+      comments: comments ?? this.comments,
+    );
+  }
 }

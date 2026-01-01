@@ -57,3 +57,35 @@
 2. 코드 포맷팅: `dart format lib test`
 3. 정적 분석: `flutter analyze`
 4. 로컬 실행: `flutter run`
+
+## 환경 변수 설정
+
+### Kakao REST API Key
+
+약속 만들기 화면에서 장소를 검색하려면 카카오 로컬 API 키가 필요합니다. 앱은 빌드 타임 상수
+`KAKAO_REST_API_KEY`를 읽어오도록 되어 있으므로, 실행 시 아래와 같이 `--dart-define` 값을 전달하세요.
+
+```bash
+flutter run \
+  --dart-define=KAKAO_REST_API_KEY=여기에_카카오_REST_API_KEY_값
+```
+
+테스트나 다른 실행 스크립트에도 동일하게 `--dart-define` 인수를 추가하면 됩니다. VS Code를 사용하는
+경우 `.vscode/launch.json` 의 `toolArgs` 항목에 위 인수를 넣어두면 편리합니다.
+
+### Supabase 스키마 동기화
+
+약속 생성 시 장소의 주소·위도·경도를 저장하려면 Supabase `appointments` 테이블에 해당 컬럼이 존재해야
+합니다. 레포지토리에는 다음 SQL이 포함되어 있으니, 프로젝트 루트에서 아래 명령으로 반영하세요.
+
+```bash
+supabase db push
+```
+
+또는 원격 DB에 직접 적용하려면:
+
+```bash
+supabase db remote commit --message "Add appointment location columns"
+```
+
+적용되는 SQL은 `supabase/migrations/20241014_add_appointment_location_columns.sql`에 기록되어 있습니다.

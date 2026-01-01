@@ -33,7 +33,7 @@ class _PeoplePickerBottomSheetState extends State<PeoplePickerBottomSheet> {
     _controller = TextEditingController();
     _friends = List.of(widget.friends);
     if (widget.initialSelected != null) {
-      _selectedIds.addAll(widget.initialSelected!.map((f) => f.id));
+      _selectedIds.addAll(widget.initialSelected!.map((f) => f.userId));
     }
     _applyFilter();
   }
@@ -66,17 +66,17 @@ class _PeoplePickerBottomSheetState extends State<PeoplePickerBottomSheet> {
 
   void _toggleSelection(Friend friend) {
     setState(() {
-      if (_selectedIds.contains(friend.id)) {
-        _selectedIds.remove(friend.id);
+      if (_selectedIds.contains(friend.userId)) {
+        _selectedIds.remove(friend.userId);
       } else {
-        _selectedIds.add(friend.id);
+        _selectedIds.add(friend.userId);
       }
     });
   }
 
   void _submitSelection(BuildContext context) {
     final selectedFriends = _friends
-        .where((friend) => _selectedIds.contains(friend.id))
+        .where((friend) => _selectedIds.contains(friend.userId))
         .toList(growable: false);
     Navigator.of(context).pop(selectedFriends);
   }
@@ -177,7 +177,7 @@ class _PeoplePickerBottomSheetState extends State<PeoplePickerBottomSheet> {
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final friend = _filtered[index];
-                        final isSelected = _selectedIds.contains(friend.id);
+                        final isSelected = _selectedIds.contains(friend.userId);
                         return _FriendTile(
                           friend: friend,
                           isSelected: isSelected,

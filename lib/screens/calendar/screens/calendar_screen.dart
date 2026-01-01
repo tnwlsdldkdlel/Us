@@ -19,8 +19,8 @@ class CalendarScreen extends StatefulWidget {
 
   final List<Appointment> todayAppointments;
   final List<UpcomingAppointment> upcomingAppointments;
-  final void Function(Appointment) onTodayAppointmentTap;
-  final void Function(UpcomingAppointment) onUpcomingAppointmentTap;
+  final Future<void> Function(Appointment) onTodayAppointmentTap;
+  final Future<void> Function(UpcomingAppointment) onUpcomingAppointmentTap;
   final VoidCallback onCreateAppointment;
 
   @override

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'screens/home/screens/home_screen.dart';
+import 'app/auth_gate.dart';
 import 'theme/app_theme.dart';
 
 class UsApp extends StatelessWidget {
@@ -23,7 +23,7 @@ class UsApp extends StatelessWidget {
       title: 'Us',
       theme: AppTheme.light(),
       themeMode: ThemeMode.light,
-      home: HomeScreen(),
+      home: const AuthGate(),
     );
   }
 }

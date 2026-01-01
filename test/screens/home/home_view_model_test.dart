@@ -13,22 +13,24 @@ void main() {
       viewModel = HomeViewModel(repository: repository);
     });
 
-    test('loads appointments from repository', () {
+    test('loads appointments from repository', () async {
       expect(viewModel.state.isLoading, isTrue);
 
-      viewModel.loadAppointments();
+      await viewModel.loadAppointments();
 
       expect(viewModel.state.isLoading, isFalse);
       expect(viewModel.state.todayAppointments, isNotEmpty);
       expect(viewModel.state.upcomingAppointments, isNotEmpty);
     });
 
-    test('findDetail returns appointment detail when it exists', () {
-      viewModel.loadAppointments();
+    test('fetchDetail returns appointment detail when it exists', () async {
+      await viewModel.loadAppointments();
       final appointments = viewModel.state.todayAppointments;
       final detailId = appointments.first.detailId;
 
-      final detail = detailId == null ? null : viewModel.findDetail(detailId);
+      final detail = detailId == null
+          ? null
+          : await viewModel.fetchDetail(detailId);
 
       expect(detail, isNotNull);
       expect(detail?.id, equals(detailId));

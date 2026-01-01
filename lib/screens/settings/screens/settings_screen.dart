@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:us/data/auth/auth_repository.dart';
 import 'package:us/theme/us_colors.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -10,14 +12,48 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final AuthRepository _authRepository = AuthRepository();
   bool _pushNotificationEnabled = true;
   bool _emailNotificationEnabled = true;
   bool _reminderEnabled = true;
+  bool _isSigningOut = false;
+  String? _signOutError;
+
+  Future<void> _signOut() async {
+    setState(() {
+      _isSigningOut = true;
+      _signOutError = null;
+    });
+
+    try {
+      await _authRepository.signOut();
+    } on AuthException catch (error) {
+      if (mounted) {
+        setState(() {
+          _signOutError = error.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _signOutError = '로그아웃 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningOut = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dividerColor = theme.dividerColor;
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final providerLabel = _resolveProviderLabel(currentUser);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -27,7 +63,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ProfileSection(dividerColor: dividerColor),
+              _ProfileSection(
+                dividerColor: dividerColor,
+                user: currentUser,
+                providerLabel: providerLabel,
+              ),
               const SizedBox(height: AppSpacing.spacingL),
               const _SectionHeader(title: '알림 설정'),
               const SizedBox(height: AppSpacing.spacingS),
@@ -48,11 +88,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: AppSpacing.spacingS),
               const _AppInfoSection(),
               const SizedBox(height: AppSpacing.spacingL),
+              if (_signOutError != null) ...[
+                Text(
+                  _signOutError!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.colorError,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.spacingS),
+              ],
               SizedBox(
                 height: 52,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _isSigningOut ? null : _signOut,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.colorPrimary500,
                     foregroundColor: Colors.white,
@@ -62,10 +111,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                  child: const Text(
-                    '로그아웃',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                  child: _isSigningOut
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          '로그아웃',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                 ),
               ),
             ],
@@ -73,6 +133,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  String _resolveProviderLabel(User? user) {
+    final provider = user?.appMetadata['provider'];
+    if (provider is String && provider.isNotEmpty) {
+      return provider.toUpperCase();
+    }
+    return '미확인';
   }
 }
 
@@ -94,13 +162,23 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({required this.dividerColor});
+  const _ProfileSection({
+    required this.dividerColor,
+    required this.user,
+    required this.providerLabel,
+  });
 
   final Color dividerColor;
+  final User? user;
+  final String providerLabel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final displayName = _resolveDisplayName();
+    final email = user?.email ?? '-';
+    final avatarUrl = _resolveAvatarUrl();
+    final avatarFallback = displayName.isNotEmpty ? displayName[0] : 'U';
 
     return Container(
       decoration: BoxDecoration(
@@ -123,20 +201,25 @@ class _ProfileSection extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: AppColors.colorPrimary500,
-                child: Text(
-                  '김',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                backgroundImage: avatarUrl != null
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl == null
+                    ? Text(
+                        avatarFallback,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: AppSpacing.spacingM),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '김민지',
+                    displayName.isNotEmpty ? displayName : '이름 미설정',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -155,20 +238,50 @@ class _ProfileSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.spacingM),
           Divider(color: dividerColor),
           const SizedBox(height: AppSpacing.spacingM),
-          const _ReadonlyField(
+          _ReadonlyField(
             icon: Icons.mail_outline_rounded,
             label: '이메일 주소',
-            value: 'minji.kim@example.com',
+            value: email,
           ),
           const SizedBox(height: AppSpacing.spacingS),
-          const _ReadonlyField(
-            icon: Icons.phone_outlined,
-            label: '전화번호',
-            value: '010-1234-567X',
+          _ReadonlyField(
+            icon: Icons.link,
+            label: '연결된 계정',
+            value: providerLabel,
           ),
         ],
       ),
     );
+  }
+
+  String _resolveDisplayName() {
+    final metadata = user?.userMetadata ?? <String, dynamic>{};
+    final possibleKeys = ['nickname', 'full_name', 'name'];
+    for (final key in possibleKeys) {
+      final value = metadata[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+
+    final email = user?.email;
+    if (email != null && email.contains('@')) {
+      return email.split('@').first;
+    }
+
+    return '';
+  }
+
+  String? _resolveAvatarUrl() {
+    final metadata = user?.userMetadata ?? <String, dynamic>{};
+    final possibleKeys = ['avatar_url', 'picture'];
+    for (final key in possibleKeys) {
+      final value = metadata[key];
+      if (value is String && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
   }
 }
 

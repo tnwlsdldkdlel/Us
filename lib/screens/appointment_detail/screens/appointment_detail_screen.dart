@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:us/screens/appointment_detail/screens/appointment_edit_screen.dart';
 
+import 'package:us/data/appointments/appointment_repository.dart';
 import 'package:us/models/appointment.dart';
+import 'package:us/screens/appointment_detail/screens/appointment_edit_screen.dart';
+import 'package:us/screens/appointment_detail/widgets/kakao_map_preview.dart';
 import 'package:us/theme/us_colors.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
@@ -9,10 +11,12 @@ class AppointmentDetailScreen extends StatefulWidget {
     super.key,
     required this.detail,
     required this.title,
+    required this.appointmentRepository,
   });
 
   final AppointmentDetail detail;
   final String title;
+  final AppointmentRepository appointmentRepository;
 
   @override
   State<AppointmentDetailScreen> createState() =>
@@ -22,6 +26,11 @@ class AppointmentDetailScreen extends StatefulWidget {
 class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   late final ScrollController _scrollController;
   late final FocusNode _commentFocusNode;
+  late AppointmentDetail _detail;
+  bool _isUpdating = false;
+  String? _errorMessage;
+  late final TextEditingController _commentController;
+  bool _isSubmittingComment = false;
 
   @override
   void initState() {
@@ -29,6 +38,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     _scrollController = ScrollController();
     _commentFocusNode = FocusNode();
     _commentFocusNode.addListener(_onCommentFocusChange);
+    _detail = widget.detail;
+    _commentController = TextEditingController();
   }
 
   @override
@@ -36,7 +47,13 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     _scrollController.dispose();
     _commentFocusNode.removeListener(_onCommentFocusChange);
     _commentFocusNode.dispose();
+    _commentController.dispose();
     super.dispose();
+  }
+
+  bool get _isCreator {
+    final uid = widget.appointmentRepository.currentUserId;
+    return uid != null && uid == _detail.creatorId;
   }
 
   void _onCommentFocusChange() {
@@ -53,8 +70,70 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     }
   }
 
+  ParticipantStatus? _viewerParticipant() {
+    final candidates = <String>{
+      if (widget.appointmentRepository.currentUserId != null)
+        widget.appointmentRepository.currentUserId!,
+      'current-user',
+    };
+
+    for (final participant in _detail.participants) {
+      if (candidates.contains(participant.userId)) {
+        return participant;
+      }
+    }
+    return null;
+  }
+
+  AttendanceStatus? get _viewerStatus => _viewerParticipant()?.status;
+
+  Future<void> _updateAttendance(AttendanceStatus status) async {
+    final current = _viewerStatus;
+    if (_isUpdating || current == status) {
+      return;
+    }
+
+    setState(() {
+      _isUpdating = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.appointmentRepository.updateRsvp(
+        appointmentId: _detail.id,
+        status: status,
+      );
+      final refreshed =
+          await widget.appointmentRepository.fetchDetailById(_detail.id);
+      if (!mounted) {
+        return;
+      }
+      if (refreshed != null) {
+        setState(() {
+          _detail = refreshed;
+          _isUpdating = false;
+        });
+      } else {
+        setState(() {
+          _isUpdating = false;
+          _errorMessage = '약속 정보를 새로고침하지 못했습니다.';
+        });
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isUpdating = false;
+        _errorMessage = '참석 상태를 업데이트하지 못했습니다. 잠시 후 다시 시도해주세요.';
+      });
+    }
+  }
+
   Future<void> _showOptionsBottomSheet() async {
-    // 바텀시트가 열리기 전에 현재 포커스를 제거합니다.
+    if (!_isCreator) {
+      return;
+    }
     _commentFocusNode.unfocus();
 
     final result = await showModalBottomSheet<String>(
@@ -114,14 +193,64 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
 
     if (result == 'edit') {
-      // 'mounted'를 확인하여 위젯이 여전히 트리에 있는지 확인합니다.
-      if (!mounted) return;
-      Navigator.of(context).push(
+      if (!mounted) {
+        return;
+      }
+      final updated = await Navigator.of(context).push<AppointmentDetail>(
         MaterialPageRoute(
-          builder: (_) => AppointmentEditScreen(detail: widget.detail),
+          builder: (_) => AppointmentEditScreen(
+            detail: _detail,
+            appointmentRepository: widget.appointmentRepository,
+          ),
         ),
       );
+      if (updated != null && mounted) {
+        setState(() => _detail = updated);
+      }
     }
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty || _isSubmittingComment) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingComment = true;
+    });
+
+    try {
+      final comment = await widget.appointmentRepository.addComment(
+        appointmentId: _detail.id,
+        content: text,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _detail = _detail.copyWith(
+          comments: [..._detail.comments, comment],
+        );
+        _isSubmittingComment = false;
+      });
+      _commentController.clear();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isSubmittingComment = false);
+      _showSnack('댓글을 등록하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -143,8 +272,9 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 child: Column(
                   children: [
                     _TopBar(
-                      dateLabel: _formatHeaderDate(widget.detail.date),
+                      dateLabel: _formatHeaderDate(_detail.date),
                       onMorePressed: _showOptionsBottomSheet,
+                      showMenu: _isCreator,
                     ),
                     Expanded(
                       child: SingleChildScrollView(
@@ -157,7 +287,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.detail.title,
+                              _detail.title,
                               style: textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF0F172A),
@@ -165,7 +295,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              _formatFullDate(widget.detail.date),
+                              _formatFullDate(_detail.date),
                               style: textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey[600],
                                 fontWeight: FontWeight.w600,
@@ -174,8 +304,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                             const SizedBox(height: 4),
                             Text(
                               _formatTimeRange(
-                                widget.detail.startTime,
-                                widget.detail.endTime,
+                                _detail.startTime,
+                                _detail.endTime,
                               ),
                               style: textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey[600],
@@ -191,71 +321,73 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  widget.detail.location,
+                                  _detail.location,
                                   style: textTheme.bodyMedium?.copyWith(
                                     color: Colors.grey[700],
                                   ),
                                 ),
                               ],
                             ),
-                            if (widget.detail.description != null) ...[
+                            if (_detail.description != null &&
+                                _detail.description!.trim().isNotEmpty) ...[
                               const SizedBox(height: 12),
                               Text(
-                                widget.detail.description!,
+                                _detail.description!,
                                 style: textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey[700],
                                 ),
                               ),
                             ],
+                            if (_detail.latitude != null &&
+                                _detail.longitude != null) ...[
+                              const SizedBox(height: 16),
+                              KakaoMapPreview(
+                                latitude: _detail.latitude!,
+                                longitude: _detail.longitude!,
+                                placeName: _detail.location,
+                              ),
+                            ],
                             const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: FilledButton(
-                                    onPressed: () {},
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      backgroundColor: UsColors.primary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    child: const Text('참여'),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: FilledButton.tonal(
-                                    onPressed: () {},
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      backgroundColor: const Color(0xFFE5E7EB),
-                                      foregroundColor: Colors.grey[700],
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    child: const Text('거절'),
-                                  ),
-                                ),
-                              ],
+                            _RsvpSelector(
+                              currentStatus: _viewerStatus,
+                              isProcessing: _isUpdating,
+                              onSelect: _updateAttendance,
                             ),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF7ED),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border:
+                                      Border.all(color: const Color(0xFFF97316)),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Text(
+                                  _errorMessage!,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(color: const Color(0xFFB45309)),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 24),
                             _SectionCard(
                               title: '참여자',
                               child: Column(
                                 children: [
-                                  for (final participant
-                                      in widget.detail.participants) ...[
-                                    _ParticipantTile(participant: participant),
-                                    if (participant !=
-                                        widget.detail.participants.last)
-                                      const Divider(height: 20, thickness: 0.5),
-                                  ],
+                                  for (final participant in _detail.participants)
+                                    ...[
+                                      _ParticipantTile(participant: participant),
+                                      if (participant !=
+                                          _detail.participants.last)
+                                        const Divider(height: 20, thickness: 0.5),
+                                    ],
                                 ],
                               ),
                             ),
@@ -265,10 +397,9 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  for (final comment
-                                      in widget.detail.comments) ...[
+                                  for (final comment in _detail.comments) ...[
                                     _CommentTile(comment: comment),
-                                    if (comment != widget.detail.comments.last)
+                                    if (comment != _detail.comments.last)
                                       const SizedBox(height: 16),
                                   ],
                                 ],
@@ -282,7 +413,12 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 ),
               ),
             ),
-            _CommentInputField(focusNode: _commentFocusNode),
+            _CommentInputField(
+              focusNode: _commentFocusNode,
+              controller: _commentController,
+              onSend: _submitComment,
+              isSubmitting: _isSubmittingComment,
+            ),
           ],
         ),
       ),
@@ -307,13 +443,29 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     final minute = time.minute.toString().padLeft(2, '0');
     return '$periodLabel $hour:$minute';
   }
+
+  String _attendanceLabel(AttendanceStatus status) {
+    switch (status) {
+      case AttendanceStatus.going:
+        return '참여';
+      case AttendanceStatus.pending:
+        return '미정';
+      case AttendanceStatus.declined:
+        return '거절';
+    }
+  }
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.dateLabel, required this.onMorePressed});
+  const _TopBar({
+    required this.dateLabel,
+    required this.onMorePressed,
+    required this.showMenu,
+  });
 
   final String dateLabel;
   final VoidCallback onMorePressed;
+  final bool showMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -338,13 +490,14 @@ class _TopBar extends StatelessWidget {
                 color: const Color(0xFF0F172A),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                onPressed: onMorePressed,
-                icon: const Icon(Icons.more_vert_rounded),
+            if (showMenu)
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  onPressed: onMorePressed,
+                  icon: const Icon(Icons.more_vert_rounded),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -389,6 +542,72 @@ class _SectionCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _RsvpSelector extends StatelessWidget {
+  const _RsvpSelector({
+    required this.currentStatus,
+    required this.onSelect,
+    required this.isProcessing,
+  });
+
+  final AttendanceStatus? currentStatus;
+  final ValueChanged<AttendanceStatus> onSelect;
+  final bool isProcessing;
+
+  @override
+  Widget build(BuildContext context) {
+    const statuses = <AttendanceStatus>[
+      AttendanceStatus.going,
+      AttendanceStatus.pending,
+      AttendanceStatus.declined,
+    ];
+
+    return Row(
+      children: [
+        for (var index = 0; index < statuses.length; index++) ...[
+          Expanded(
+            child: FilledButton(
+              onPressed: isProcessing
+                  ? null
+                  : () => onSelect(statuses[index]),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                backgroundColor:
+                    currentStatus == statuses[index]
+                        ? UsColors.primary
+                        : const Color(0xFFE5E7EB),
+                foregroundColor: currentStatus == statuses[index]
+                    ? Colors.white
+                    : Colors.grey[700],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                _label(statuses[index]),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ),
+          if (index != statuses.length - 1) const SizedBox(width: 12),
+        ],
+      ],
+    );
+  }
+
+  String _label(AttendanceStatus status) {
+    switch (status) {
+      case AttendanceStatus.going:
+        return '참여';
+      case AttendanceStatus.pending:
+        return '미정';
+      case AttendanceStatus.declined:
+        return '거절';
+    }
   }
 }
 
@@ -531,9 +750,17 @@ class _StatusPalette {
 }
 
 class _CommentInputField extends StatelessWidget {
-  const _CommentInputField({this.focusNode});
+  const _CommentInputField({
+    required this.focusNode,
+    required this.controller,
+    required this.onSend,
+    required this.isSubmitting,
+  });
 
   final FocusNode? focusNode;
+  final TextEditingController controller;
+  final VoidCallback onSend;
+  final bool isSubmitting;
 
   @override
   Widget build(BuildContext context) {
@@ -554,28 +781,41 @@ class _CommentInputField extends StatelessWidget {
           ),
         ],
       ),
-      child: TextField(
-        focusNode: focusNode,
-        decoration: InputDecoration(
-          hintText: '댓글 남기기',
-          border: InputBorder.none,
-          filled: true,
-          fillColor: const Color.fromARGB(232, 230, 233, 237),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-          suffixIcon: IconButton(
-            onPressed: () {
-              // TODO: 댓글 전송 로직 구현
-            },
-            icon: const Icon(Icons.send_rounded, color: UsColors.primary),
-          ),
-        ),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) {
+          final isSendEnabled =
+              value.text.trim().isNotEmpty && !isSubmitting;
+          return TextField(
+            controller: controller,
+            focusNode: focusNode,
+            enabled: !isSubmitting,
+            decoration: InputDecoration(
+              hintText: '댓글 남기기',
+              border: InputBorder.none,
+              filled: true,
+              fillColor: const Color.fromARGB(232, 230, 233, 237),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: IconButton(
+                onPressed: isSendEnabled ? onSend : null,
+                icon: isSubmitting
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_rounded, color: UsColors.primary),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
